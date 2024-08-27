@@ -1,0 +1,977 @@
+openapi: 3.0.0
+info:
+  title: API do Pix transferência
+  description: >-
+    Esta API permite consultar e realizar transferências, 24 horas por dia, 365
+    dias no ano, inclusive aos finais de semana e feriados, com o crédito caindo
+    na hora entre contas Bradesco e diferentes instituições, através dos
+    endpoints listados abaixo:
+  contact:
+    name: API Support
+    email: suporte.api@bra.com.br
+  version: 1.0.0
+servers:
+  - url: https://qrpix-h.bra.com.br
+  - url: https://qrpix.pix.tu.teste.internet
+paths:
+  /v1/consulta/transferencia/{id-transacao}/{e2e}:
+    get:
+      tags:
+        - Gerenciamento de Transferência Pix
+      summary: Consultar Transferência Pix
+      description: "Endpoint para consultar uma transferência com dados `e2e`. \r\n\r\n Todas as transações realizadas pelo serviço de transferência que retornarem com status `EM_PROCESSAMENTO` devem ser consultadas por meio do serviço. Recomendamos a consulta da transferência dentro do período máximo de 1 minuto para obter o status atualizado."
+      operationId: consultarTransferencia
+      parameters:
+        - name: id-transacao
+          in: path
+          description: >-
+            Identificador da transação. É atribuido pelo pagador para
+            identificar a transferência.
+          required: true
+          schema:
+            maxLength: 35
+            minLength: 1
+            pattern: '[a-zA-Z0-9]{1,35}'
+            type: string
+          example: txIdExemploTransacaoTeste01
+        - name: e2e
+          in: path
+          description: >-
+            Número único da identificação da transação
+            (<code>EndToEndIdentification</code>) gerado pelo PSP e que define a
+            transferência.
+          required: true
+          schema:
+            maxLength: 32
+            minLength: 32
+            pattern: '[a-zA-Z0-9]{32}'
+            type: string
+            format: '[a-zA-Z0-9]{32}'
+          example: E60746948202204271435L3877xxXxxX
+      responses:
+        '200':
+          description: Consulta realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferenciaConsultada'
+              examples:
+                Transferência para chave Pix:
+                  description: Transferência para chave Pix.
+                  value:
+                    dataCriacao: '2022-11-30T17:15:08.537Z'
+                    dataEfetivacao: '2022-11-30T17:15:19.807Z'
+                    descricao: Pagamento teste
+                    e2e: E60746948202211301715L2856oOXfn8
+                    idTransacao: TransfenciaAPI000000000000000000001
+                    pagador:
+                      agencia: '2856'
+                      conta: '565'
+                      cpfCnpj: '18241818000161'
+                      tipoconta: CONTA_CORRENTE
+                    recebedor:
+                      chavePix: '09999902291969'
+                      cpfCnpj: '09999902291969'
+                      nomeFavorecido: KLEBER ADILSON
+                    status: CONCLUÍDO
+                    valor: '50.00'
+                Transferência para agência e conta:
+                  description: Transferência para agência e conta.
+                  value:
+                    dataCriacao: '2022-11-30T17:17:23.870Z'
+                    dataEfetivacao: '2022-11-30T17:17:35.060Z'
+                    descricao: Pagamento teste
+                    e2e: E60746948202211301717L2856RaWTN0
+                    idTransacao: TransfenciaAPI000000000000000000002
+                    pagador:
+                      agencia: '2856'
+                      conta: '565'
+                      cpfCnpj: '18241818000161'
+                      tipoconta: CONTA_CORRENTE
+                    recebedor:
+                      agencia: '3987'
+                      conta: '200958'
+                      cpfCnpj: '18241818000161'
+                      ispb: '60746948'
+                      nomeFavorecido: GUSTAVO SANTOS
+                      tipoconta: CONTA_POUPANCA
+                    status: CONCLUÍDO
+                    valor: '50.00'
+                Transferência rejeitada:
+                  description: Transferência rejeitada.
+                  value:
+                    pagador:
+                      cpfCnpj: '18241818000161'
+                      agencia: '2856'
+                      conta: '565'
+                      tipoconta: CONTA_CORRENTE
+                    recebedor:
+                      cpfCnpj: '18241818000161'
+                      chavePix: '18241818000161'
+                      nomeFavorecido: GUSTAVO SANTOS
+                    valor: '50.00'
+                    idTransacao: TransfenciaAPI000000000000000000002
+                    descricao: Tranfs teste rejeitada
+                    dataCriacao: '2023-07-30T15:15:10.213Z'
+                    status: REJEITADO
+                    motivo: PAGAMENTO REJEITADO PARA OUTRA INSTITUIÇÃO
+        '400':
+          description: Informações inválidas enviadas na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+              example:
+                type: >-
+                  https://pix.bcb.gov.br/api/v2/error/PgtoTransferenciaOperacaoInvalida
+                title: Transferência inválida
+                status: 400
+                detail: >-
+                  A requisição que busca alterar/criar ou consultar um(a)
+                  transferência não respeita o schema ou está semanticamente
+                  errada.
+                violacoes:
+                  - razao: >-
+                      O campo `consultarTransferencia.path.2e2` não respeita o
+                      schema.
+                    propriedade: consultarTransferencia.path.2e2
+                    valor: E607@6948202306132443L39870B350&
+        '404':
+          description: Transação não encontrada para o `Id-transacao` informado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError404'
+              example:
+                type: >-
+                  https://pix.bcb.gov.br/api/v2/error/PgtoTransferenciaOperacaoInvalida
+                title: Não encontrada
+                status: 404
+                detail: >-
+                  A requisição que busca alterar/criar ou consultar um(a)
+                  transferência não respeita o schema ou está semanticamente
+                  errada.
+                correlationId: 5013
+        '500':
+          description: Erro inesperado ao processar a transferência.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError500'
+              example:
+                type: https://pix.bcb.gov.br/api/v2/error/ErroInternoDoServidor
+                title: Erro interno do servidor
+                status: 500
+                detail: Condição inesperada ao processar requisição.
+      security:
+        - Authorization: []
+  /v1/spi/solicitar-transferencia:
+    post:
+      tags:
+        - Gerenciamento de Transferência Pix
+      summary: Solicitar transferência Pix
+      description: "Endpoint para solicitar uma transferência Pix. A transferência pode ser realizada via chave Pix ou dados bancários do pagador. \r\n\r\n O parâmetro `id-transacao` é atribuído pela empresa (pagador) para identificar a transferência e não poderá ser reutilizado em outra transação. \r\n\r\n Ao informar CPF/CNPJ e chave Pix do recebedor, o endpoint valida se a chave pertence ao CPF/CNPJ informado. Se pertencer, a operação é realizada. Caso contrário, é retornada mensagem de erro. \r\n\r\n Ao informar somente a chave do recebedor, o endpoint considera que o pagador conhece o recebedor e não realiza a validação."
+      operationId: solicitarTransferencia
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferenciaRequest'
+      responses:
+        '200':
+          description: Transação realizada com sucessso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferenciaResponse'
+              examples:
+                Transferência informando chave do pagador e chave do recebedor:
+                  description: >-
+                    Transferência informando chave do pagador e chave do
+                    recebedor.
+                  value:
+                    pagador:
+                      cpfCnpj: '18241818000161'
+                      agencia: '2856'
+                      conta: '565'
+                      tipoconta: CONTA_CORRENTE
+                    recebedor:
+                      cpfCnpj: '09999902291969'
+                      tipoChave: CPFCNPJ
+                      chavePix: '09999902291969'
+                      nomeFavorecido: GUSTAVO SANTOS
+                    valor: '50.00'
+                    e2e: E60746948202211301715L2856oOXfn8
+                    idTransacao: TransfenciaAPI000000000000000000002
+                    descricao: Tranfs teste
+                    dataCriacao: '2023-07-30T15:15:10.213Z'
+                    status: CONCLUIDO
+                    valorTarifa: 0.9
+                    motivo: Transação realizada com sucesso.
+                Transferência informando chave do pagador e agência e conta do recebedor:
+                  description: >-
+                    Transferência informando chave do pagador e agência do
+                    recebedor.
+                  value:
+                    pagador:
+                      cpfCnpj: '18241818000161'
+                      agencia: '2856'
+                      conta: '565'
+                      tipoconta: CONTA_CORRENTE
+                    recebedor:
+                      cpfCnpj: '09999902291969'
+                      tipoChave: CPFCNPJ
+                      chavePix: '09999902291969'
+                      nomeFavorecido: GUSTAVO SANTOS
+                    valor: '50.00'
+                    e2e: E60746948202211301715L2856oOXfn8
+                    idTransacao: TransfenciaAPI000000000000000000002
+                    descricao: Tranfs teste
+                    dataCriacao: '2023-07-30T15:15:10.213Z'
+                    status: CONCLUIDO
+                    valorTarifa: 0
+                    mensagem: Transação realizada com sucesso.
+                Transferência informando agência e conta do pagador e agência e chave do recebedor:
+                  description: >-
+                    Transferência informando agência e conta do pagador e chave
+                    do recebedor.
+                  value:
+                    pagador:
+                      tipoconta: CONTA_CORRENTE
+                      agencia: '2856'
+                      conta: '565'
+                    recebedor:
+                      cpfCnpj: '09999902291969'
+                      tipoChave: AGENCIACONTA
+                      ispb: '60746948'
+                      agencia: '3987'
+                      conta: '200958'
+                      banco: '237'
+                      nomeFavorecido: GUSTAVO SANTOS
+                    valor: '50.00'
+                    e2e: E60746948202211301715L2856oOXfn8
+                    idTransacao: TransfenciaAPI000000000000000000002
+                    descricao: Tranfs teste
+                    dataCriacao: '2023-07-30T15:15:10.213Z'
+                    status: CONCLUIDO
+                    valorTarifa: 0.9
+                    mensagem: Transação realizada com sucesso.
+        '202':
+          description: Transação rejeitada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitarTransferenciaResponse'
+              example:
+                pagador:
+                  cpfCnpj: '18241818000161'
+                  agencia: '2856'
+                  conta: '565'
+                  tipoconta: CONTA_CORRENTE
+                recebedor:
+                  cpfCnpj: '09999902291969'
+                  tipoChave: CPFCNPJ
+                  chavePix: '09999902291969'
+                  nomeFavorecido: GUSTAVO SANTOS
+                valor: '50.00'
+                e2e: E60746948202211301715L2856oOXfn8
+                idTransacao: TransfenciaAPI000000000000000000002
+                descricao: Tranfs teste rejeita
+                dataCriacao: '2023-07-30T15:15:10.213Z'
+                status: REJEITADO
+                mensagem: PAGAMENTO REJEITADO P/ OUTRA INSTITUICAO
+        '400':
+          description: Transferência sem informar valor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+              example:
+                type: >-
+                  https://pix.bcb.gov.br/api/v2/error/PgtoTransferenciaOperacaoInvalida
+                title: Transferência inválida
+                status: 400
+                detail: >-
+                  A requisição que busca alterar/criar ou consultar um(a)
+                  transferência não respeita o schema ou está semanticamente
+                  errada.
+                violacoes:
+                  - razao: >-
+                      O campo `consultarTransferencia.path.2e2` não respeita o
+                      schema.
+                    propriedade: consultarTransferencia.path.2e2
+                    valor: ''
+        '412':
+          description: Requisição de participante que viola alguma regra de negócio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError'
+              example:
+                type: >-
+                  https://pix.bcb.gov.br/api/v2/error/PgtoTransferenciaOperacaoInvalida
+                title: Transferência inválida
+                status: 412
+                detail: >-
+                  M0075 - E003-0 - CONTA NAO POSSUI SALDO SUFICIENTE PARA
+                  TRANSACAO
+                violacoes:
+                  - razao: CONTA NÃO POSSUI SALDO SUFICIENTE PARA TRANSAÇÃO
+                    propriedade: E003-0
+        '500':
+          description: >-
+            Serviço não está disponível no momento. Serviço solicitado pode
+            estar em manutençãoo ou fora da janela de funcionamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseError500'
+              example:
+                type: https://pix.bcb.gov.br/api/v2/error/ErroInternoDoServidor
+                title: Erro interno do servidor
+                status: 500
+                detail: Condição inesperada ao processar requisição.
+      security:
+        - Authorization: []
+components:
+  schemas:
+    Pagador:
+      required:
+        - agencia
+        - conta
+        - cpfCnpj
+        - tipoConta
+      type: object
+      properties:
+        cpfCnpj:
+          maxLength: 14
+          minLength: 11
+          type: string
+          description: CPF ou CNPJ do usuário pagador.
+          example: '97803114002740'
+        agencia:
+          maxLength: 4
+          minLength: 4
+          type: string
+          description: Agência do usuário pagador.
+          example: '3877'
+        conta:
+          maxLength: 20
+          minLength: 1
+          type: string
+          description: Conta do usuário pagador.
+          example: '20220'
+        tipoConta:
+          type: string
+          description: Tipo de conta do usuário pagador.
+          example: CONTA_CORRENTE
+          enum:
+            - CONTA_CORRENTE
+            - CONTA_SALARIO
+            - CONTA_POUPANCA
+            - CONTA_PAGAMENTO
+    Paginacao:
+      required:
+        - itensPorPagina
+        - paginaAtual
+        - quantidadeDePaginas
+        - quantidadeTotalDeItens
+      type: object
+      properties:
+        paginaAtual:
+          minimum: 0
+          type: integer
+          description: Número da página recuperada
+          format: int32
+          example: 0
+        itensPorPagina:
+          minimum: 1
+          type: integer
+          description: Quantidade de registros retornado na página
+          format: int32
+          example: 1000
+        quantidadeDePaginas:
+          minimum: 1
+          type: integer
+          description: Quantidade de páginas disponíveis para consulta
+          format: int32
+          example: 10
+        quantidadeTotalDeItens:
+          minimum: 0
+          type: integer
+          description: >-
+            Quantidade total de itens disponiveis de acordo com os parâmetros
+            informados
+          format: int32
+          example: 20
+    ParametrosConsultaTransferencia:
+      required:
+        - fim
+        - inicio
+        - paginacao
+      type: object
+      properties:
+        inicio:
+          type: string
+          description: Data inicial utilizada na consulta. Respeita RFC 3339.
+          example: '2020-09-15T00:00:00.000Z'
+        fim:
+          type: string
+          description: Data de fim utilizada na consulta. Respeita RFC 3339.
+          example: '2020-09-16T00:00:00.000Z'
+        status:
+          type: string
+          description: Status da cobranca.
+        paginacao:
+          $ref: '#/components/schemas/Paginacao'
+      description: >-
+        Parâmetros utilizados para a realização de uma consulta de
+        transferências.
+    Recebedor:
+      required:
+        - conta
+        - cpfCnpj
+        - ispb
+        - nomeFavorecido
+        - tipoConta
+      type: object
+      properties:
+        cpfCnpj:
+          maxLength: 14
+          minLength: 11
+          type: string
+          description: CPF ou CNPJ do usuário recebedor.
+          example: '97803114002740'
+        chavePix:
+          maxLength: 77
+          minLength: 1
+          type: string
+          description: >-
+            Chave pix do usuário recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for EMAIL, TELEFONE, CPFCNPJ ou EVP.
+          example: b6295ee1-f054-47d1-9e90-ee57b74f60d9
+        ispb:
+          maxLength: 8
+          minLength: 8
+          type: string
+          description: >-
+            ISPB do banco recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '00000000'
+        agencia:
+          type: string
+          description: >-
+            Agência do banco recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '3877'
+        conta:
+          maxLength: 20
+          minLength: 1
+          type: string
+          description: >-
+            Conta do banco recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '20220'
+        tipoConta:
+          type: string
+          description: >-
+            Tipo da conta do recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: CONTA_CORRENTE
+          enum:
+            - CONTA_CORRENTE
+            - CONTA_SALARIO
+            - CONTA_POUPANCA
+            - CONTA_PAGAMENTO
+        nomeFavorecido:
+          maxLength: 60
+          minLength: 1
+          type: string
+          description: Nome do favorecido.
+          example: Gustavo Santos
+    TransferenciaConsultada:
+      required:
+        - e2e
+        - idTransacao
+        - pagador
+        - recebedor
+        - status
+        - valor
+      type: object
+      properties:
+        pagador:
+          $ref: '#/components/schemas/Pagador'
+        recebedor:
+          $ref: '#/components/schemas/Recebedor'
+        valor:
+          maxLength: 17
+          minLength: 1
+          type: string
+          description: Valor da transação.
+          example: '200.00'
+        e2e:
+          maxLength: 32
+          minLength: 32
+          type: string
+          description: E2e da transação.
+          example: E60746948202204271435L3877xxXxxX
+        idTransacao:
+          maxLength: 35
+          minLength: 1
+          pattern: '[a-zA-Z0-9]{1,35}'
+          type: string
+          description: ID da transação (TXID).
+          example: txIdExemploTransacaoTeste01
+        descricao:
+          type: string
+          description: Descrição da transação.
+          example: Pagamento de cobrança
+        dataCriacao:
+          type: string
+          description: Data da criação. Respeita o formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        status:
+          type: string
+          description: Status da transação.
+          example: CONCLUIDO
+          enum:
+            - CONCLUIDO
+            - EM_PROCESSAMENTO
+            - REJEITADO
+        dataEfetivacao:
+          type: string
+          description: >-
+            Data da efetivação.
+
+            Será exibido somente quando o status for CONCLUIDO. Respeitando o
+            formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        motivo:
+          type: string
+          description: >-
+            Campo motivo cancelamento ou rejeição, exibido somente quando uma
+            transferencia estiver o status REJEITADA
+          example: >-
+            Não foi possível efetuar a transação. Oriente o recebedor a contatar
+            seu banco
+        codigoMotivo:
+          type: string
+          description: >-
+            Campo codigoMotivo da rejeicão, exibido somente quando uma
+            transferencia estiver com o status REJEITADA
+          example: '1650'
+    ResponseError:
+      required:
+        - status
+        - title
+        - type
+      type: object
+      properties:
+        type:
+          description: >-
+            URI de referencia que identifica o tipo de problema. De acordo com a
+            RFC 7807.
+        title:
+          type: string
+          description: Descricao resumida do problema.
+        status:
+          type: integer
+          description: Codigo HTTP do status retornado.
+          format: int32
+        detail:
+          type: string
+          description: Descricao completa do problema.
+        correlationId:
+          type: string
+          description: Identificador de correlacao do problema para fins de suporte
+        violacoes:
+          type: array
+          description: Violacoes
+          items:
+            $ref: '#/components/schemas/Violacao'
+    ResponseError404:
+      required:
+        - status
+        - title
+        - type
+      type: object
+      properties:
+        type:
+          description: >-
+            URI de referencia que identifica o tipo de problema. De acordo com a
+            RFC 7807.
+        title:
+          type: string
+          description: Descricao resumida do problema.
+        status:
+          type: integer
+          description: Codigo HTTP do status retornado.
+          format: int32
+        detail:
+          type: string
+          description: Descricao completa do problema.
+        correlationId:
+          type: string
+          description: Identificador de correlacao do problema para fins de suporte
+    ResponseError500:
+      required:
+        - status
+        - title
+        - type
+      type: object
+      properties:
+        type:
+          description: >-
+            URI de referencia que identifica o tipo de problema. De acordo com a
+            RFC 7807.
+        title:
+          type: string
+          description: Descricao resumida do problema.
+        status:
+          type: integer
+          description: Codigo HTTP do status retornado.
+          format: int32
+        detail:
+          type: string
+          description: Descricao completa do problema.
+    Violacao:
+      type: object
+      properties:
+        razao:
+          type: string
+          description: Descricao do erro.
+        propriedade:
+          type: string
+          description: Nome da propriedade
+        valor:
+          type: string
+          description: Valor da propriedade
+        correlationId:
+          type: string
+    TransferenciaRequest:
+      required:
+        - dataCriacao
+        - e2e
+        - idTransacao
+        - motivo
+        - pagador
+        - recebedor
+        - status
+        - valor
+      type: object
+      properties:
+        pagador:
+          $ref: '#/components/schemas/PagadorResponse'
+        recebedor:
+          $ref: '#/components/schemas/RecebedorResponse'
+        valor:
+          maxLength: 16
+          minLength: 4
+          pattern: ^d*[0-9\.]*(\.)[0-9]{2}
+          type: string
+          description: >-
+            O separador decimal e o caractere ponto. Não é aplicável utilizar
+            separador de milhar.
+          example: >-
+            Exemplos de valores aderentes ao padrao: “0.00”, “1.00”, “123.99”,
+            “123456789.23”
+        idtransacao:
+          maxLength: 35
+          minLength: 1
+          pattern: '[a-zA-Z0-9]{1,35}'
+          type: string
+          description: Identificador da trasacao.
+          example: txIdExemploTransacaoTeste01
+        descricao:
+          maxLength: 30
+          minLength: 0
+          type: string
+          description: Descrição da transação.
+        dataCriacao:
+          type: string
+          description: Data da criação. Respeita o formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        status:
+          type: string
+          description: Status da transação.
+          example: CONCLUIDO
+          enum:
+            - CONCLUIDO
+            - EM_PROCESSAMENTO
+            - REJEITADO
+        valorTarifa:
+          type: string
+          description: >-
+            Valor da tarifa a ser pago pela transação solicitada. 
+
+            Será exibido somente quando status for EM_PROCESSAMENTO ou
+            CONCLUIDO.
+          example: '1.00'
+        motivo:
+          type: string
+          description: Mensagem descritiva do resultado da solicitação.
+          example: Transação efetuada com sucesso
+    TransferenciaResponse:
+      required:
+        - dataCriacao
+        - e2e
+        - idTransacao
+        - motivo
+        - pagador
+        - recebedor
+        - status
+        - valor
+      type: object
+      properties:
+        pagador:
+          $ref: '#/components/schemas/Pagador'
+        recebedor:
+          $ref: '#/components/schemas/RecebedorResponse'
+        valor:
+          maxLength: 17
+          minLength: 1
+          type: string
+          description: Valor da transação.
+          example: '200.00'
+        e2e:
+          maxLength: 32
+          minLength: 32
+          type: string
+          description: E2e da transação.
+          example: E60746948202204271435L3877xxXxxX
+        idTransacao:
+          maxLength: 35
+          minLength: 1
+          type: string
+          description: ID da transação(TXID).
+          example: txIdExemploTransacaoTeste01
+        descricao:
+          maxLength: 30
+          minLength: 0
+          type: string
+          description: Descrição da transação.
+          example: Pagamento de cobranca
+        dataCriacao:
+          type: string
+          description: Data da criação. Respeita o formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        status:
+          type: string
+          description: Status da transação.
+          example: CONCLUIDO
+          enum:
+            - CONCLUIDO
+            - EM_PROCESSAMENTO
+            - REJEITADO
+        dataEfetivacao:
+          type: string
+          description: Data da criação. Respeita o formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        motivo:
+          type: string
+          description: Mensagem descritiva do resultado da solicitação.
+          example: Transação efetuada com sucesso
+    PagadorResponse:
+      required:
+        - agencia
+        - conta
+        - cpfCnpj
+        - tipoConta
+      type: object
+      properties:
+        cpfCnpj:
+          maxLength: 14
+          minLength: 11
+          type: string
+          description: CPF ou CNPJ do usuario pagador.
+          example: '97803114002740'
+        agencia:
+          maxLength: 4
+          minLength: 4
+          type: string
+          description: Agencia do usuario pagador.
+          example: '3877'
+        conta:
+          maxLength: 19
+          minLength: 1
+          type: string
+          description: Conta do usuario pagador.
+          example: '20220'
+        tipoConta:
+          type: string
+          description: Tipo de conta do usuario pagador.
+          example: CONTA_CORRENTE
+          enum:
+            - CONTA_CORRENTE
+            - CONTA_SALARIO
+            - CONTA_POUPANCA
+            - CONTA_PAGAMENTO
+    RecebedorResponse:
+      required:
+        - banco
+        - conta
+        - cpfCnpj
+        - ispb
+        - nomeFavorecido
+        - tipoChave
+        - tipoConta
+      type: object
+      properties:
+        cpfCnpj:
+          maxLength: 14
+          minLength: 11
+          pattern: ^\d{11}$|^\d{14}$
+          type: string
+          description: CPF ou CNPJ do usuario recebedor.
+          example: '97803114002740'
+        tipoChave:
+          type: string
+          description: >-
+            Tipo da chave pix do recebedor. Valores válidos: `EMAIL`,
+            `TELEFONE`, `CPF-CNPJ`, `AGENCIACONTA`, `EVP`.
+          example: EVP
+        tipoConta:
+          type: string
+          description: >-
+            Tipo da conta do recebedor. Será exibido somente quando o tipo Chave
+            informado na solicitação da transferência for AGENCIACONTA.
+          example: CONTA_CORRENTE
+          enum:
+            - CONTA_CORRENTE
+            - CONTA_SALARIO
+            - CONTA_POUPANCA
+            - CONTA_PAGAMENTO
+        chavePix:
+          maxLength: 77
+          minLength: 1
+          type: string
+          description: >-
+            Chave pix do usuario recebedor. 
+
+            Trona-se obrigatório quando o tipoChave informado for EMAIL,
+            TELEFONE, CPFCNPJ ou EVP.
+          example: b6295ee1-f054-47d1-9e90-ee57b74f60d9
+        ispb:
+          maxLength: 8
+          minLength: 8
+          type: string
+          description: >-
+            ISPB do banco recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '00000000'
+        agencia:
+          type: string
+          description: >-
+            Agencia do recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '3877'
+        conta:
+          maxLength: 19
+          minLength: 1
+          type: string
+          description: >-
+            Conta do recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '20220'
+        banco:
+          type: string
+          description: >-
+            Codigo do banco recebedor. 
+
+            Será exibido somente quando o tipoChave informado na solicitação da
+            transferência for AGENCIACONTA.
+          example: '237'
+        nomeFavorecido:
+          maxLength: 60
+          minLength: 1
+          type: string
+          description: Nome do favorecido.
+          example: Gustavo Santos
+    SolicitarTransferenciaResponse:
+      required:
+        - dataCriacao
+        - e2e
+        - idTransacao
+        - motivo
+        - pagador
+        - recebedor
+        - status
+        - valor
+      type: object
+      properties:
+        pagador:
+          $ref: '#/components/schemas/PagadorResponse'
+        recebedor:
+          $ref: '#/components/schemas/RecebedorResponse'
+        valor:
+          maxLength: 17
+          minLength: 1
+          type: string
+          description: Valor da transação.
+          example: '200.00'
+        e2e:
+          maxLength: 32
+          minLength: 32
+          type: string
+          description: E2e da transação.
+          example: E60746948202204271435L3877xxXxxX
+        idTransacao:
+          maxLength: 35
+          minLength: 1
+          type: string
+          description: ID da transação(TXID).
+          example: txIdExemploTransacaoTeste01
+        descricao:
+          maxLength: 30
+          minLength: 0
+          type: string
+          description: Descrição da transação.
+          example: Pagamento de cobranca
+        dataCriacao:
+          type: string
+          description: Data da criação. Respeita o formato definido na RFC 3339
+          example: '2022-06-06T17:54:08.083Z'
+        status:
+          type: string
+          description: Status da transação.
+          example: REJEITADO
+          enum:
+            - CONCLUIDO
+            - EM_PROCESSAMENTO
+            - REJEITADO
+        motivo:
+          type: string
+          description: Mensagem descritiva do resultado da solicitação.
+          example: Não foi possivel realizar a transação
+        codigoMotivo:
+          type: string
+          description: |-
+            Código de motivo da rejeição. 
+            Será exibido somente quando status for REJEITADO.
+          example: '3333'
+  securitySchemes:
+    Authorization:
+      description: >-
+        Bearer Token gerado através do endpoint de token conforme orientado no
+        guia de consumo das APIs do Bradesco.
+      scheme: bearer
+      type: http
+      bearerFormat: JWT
